@@ -263,6 +263,10 @@ For detailed documentation, see help.md
                           default=2048,
                           help='Maximum bits for fingerprint optimization (default: 2048)')
         
+        parser.add_argument('-feat_spec', '--feature-spec',
+                          type=str,
+                          help='Custom feature combination (e.g., "desc:basic+fp:morgan:1024+fp:maccs")')
+        
         parser.add_argument('-task', '--task-type',
                           choices=['auto', 'classification', 'regression'],
                           default='auto',
@@ -610,6 +614,7 @@ For detailed documentation, see help.md
                 'fingerprint_type': getattr(args, 'fp_type', 'morgan'),
                 'fingerprint_bits': getattr(args, 'fp_bits', 2048),
                 'fingerprint_radius': getattr(args, 'fp_radius', 2),
+                'feature_spec': getattr(args, 'feat_spec', None),
                 'optimize_fp_length': getattr(args, 'optimize_fp', False),
                 'fp_optimize_start': getattr(args, 'fp_start', 16),
                 'fp_optimize_step': getattr(args, 'fp_step', 16),

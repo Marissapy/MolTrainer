@@ -33,13 +33,14 @@ class MolecularFeatureGenerator:
             )
     
     def generate_features(self, smiles_series: pd.Series, 
-                         feature_type: str = 'descriptors',
-                         descriptor_set: str = 'basic',
-                         fingerprint_type: str = 'morgan',
-                         fingerprint_bits: int = 2048,
-                         fingerprint_radius: int = 2,
-                         combine_features: bool = False,
-                         verbose: bool = False) -> Tuple[np.ndarray, List[str]]:
+                        feature_type: str = 'descriptors',
+                        descriptor_set: str = 'basic',
+                        fingerprint_type: str = 'morgan',
+                        fingerprint_bits: int = 2048,
+                        fingerprint_radius: int = 2,
+                        combine_features: bool = False,
+                        feature_spec: str = None,
+                        verbose: bool = False) -> Tuple[np.ndarray, List[str]]:
         """
         Generate molecular features from SMILES
         
@@ -51,43 +52,54 @@ class MolecularFeatureGenerator:
             fingerprint_bits: Number of bits for fingerprint (if applicable)
             fingerprint_radius: Radius for Morgan fingerprint
             combine_features: Combine descriptors + fingerprints
+            feature_spec: Custom feature specification (e.g., "desc:basic+fp:morgan:1024+fp:maccs")
             verbose: Print progress
         
         Returns:
             Tuple of (features_array, feature_names)
+            
+        Note:
+            - In 'combined' mode, features are concatenated as: [descriptors, fingerprints]
+            - Use feature_spec for custom combinations with specific order
         """
         self.invalid_smiles = []
         
         # Suppress RDKit warnings temporarily
         self.RDLogger.DisableLog('rdApp.*')
         
-        if verbose:
-            print(f"   Generating {feature_type} features...")
-            if feature_type in ['descriptors', 'combined']:
-                print(f"   Descriptor set: {descriptor_set}")
-            if feature_type in ['fingerprints', 'combined']:
-                print(f"   Fingerprint: {fingerprint_type} ({fingerprint_bits} bits)")
-        
-        # Generate features based on type
-        if feature_type == 'descriptors':
+        # If feature_spec is provided, use custom combination
+        if feature_spec:
+            features, feature_names = self._generate_custom_features(
+                smiles_series, feature_spec, verbose
+            )
+        elif feature_type == 'descriptors':
+            if verbose:
+                print(f"   Generating descriptors: {descriptor_set}")
             features, feature_names = self._generate_descriptors(
                 smiles_series, descriptor_set, verbose
             )
         elif feature_type == 'fingerprints':
+            if verbose:
+                print(f"   Generating fingerprint: {fingerprint_type} ({fingerprint_bits} bits)")
             features, feature_names = self._generate_fingerprints(
                 smiles_series, fingerprint_type, fingerprint_bits, 
                 fingerprint_radius, verbose
             )
         elif feature_type == 'combined':
+            if verbose:
+                print(f"   Generating combined features:")
+                print(f"     1. Descriptors: {descriptor_set}")
+                print(f"     2. Fingerprint: {fingerprint_type} ({fingerprint_bits} bits)")
+                print(f"     Concatenation order: [descriptors, fingerprints]")
             # Generate both descriptors and fingerprints
             desc_features, desc_names = self._generate_descriptors(
-                smiles_series, descriptor_set, verbose
+                smiles_series, descriptor_set, verbose=False
             )
             fp_features, fp_names = self._generate_fingerprints(
                 smiles_series, fingerprint_type, fingerprint_bits,
-                fingerprint_radius, verbose
+                fingerprint_radius, verbose=False
             )
-            # Combine
+            # Combine: descriptors first, then fingerprints
             features = np.hstack([desc_features, fp_features])
             feature_names = desc_names + fp_names
         else:
@@ -102,6 +114,69 @@ class MolecularFeatureGenerator:
             print(f"   Warning: {len(self.invalid_smiles)} invalid SMILES found")
         
         return features, feature_names
+    
+    def _generate_custom_features(self, smiles_series: pd.Series, 
+                                  feature_spec: str, 
+                                  verbose: bool = False) -> Tuple[np.ndarray, List[str]]:
+        """
+        Generate features based on custom specification
+        
+        Args:
+            smiles_series: Series of SMILES strings
+            feature_spec: Feature specification string
+                        Format: "desc:basic+fp:morgan:1024+fp:maccs"
+                        - desc:<set>: descriptors (basic, extended, all)
+                        - fp:<type>:<bits>:<radius>: fingerprint
+                        Example: "desc:basic+desc:extended+fp:morgan:1024:2+fp:maccs"
+            verbose: Print progress
+        
+        Returns:
+            Tuple of (features_array, feature_names)
+        """
+        if verbose:
+            print(f"   Generating custom features: {feature_spec}")
+        
+        feature_parts = feature_spec.split('+')
+        all_features = []
+        all_names = []
+        
+        for i, part in enumerate(feature_parts, 1):
+            part = part.strip()
+            
+            if part.startswith('desc:'):
+                # Descriptor specification: desc:basic, desc:extended, desc:all
+                desc_set = part.split(':')[1]
+                if verbose:
+                    print(f"     {i}. Descriptors: {desc_set}")
+                features, names = self._generate_descriptors(smiles_series, desc_set, verbose=False)
+                all_features.append(features)
+                all_names.extend(names)
+                
+            elif part.startswith('fp:'):
+                # Fingerprint specification: fp:morgan:1024:2 or fp:maccs
+                parts = part.split(':')
+                fp_type = parts[1]
+                fp_bits = int(parts[2]) if len(parts) > 2 else 2048
+                fp_radius = int(parts[3]) if len(parts) > 3 else 2
+                
+                if verbose:
+                    print(f"     {i}. Fingerprint: {fp_type} ({fp_bits} bits" + 
+                          (f", radius={fp_radius}" if fp_type == 'morgan' else "") + ")")
+                features, names = self._generate_fingerprints(
+                    smiles_series, fp_type, fp_bits, fp_radius, verbose=False
+                )
+                all_features.append(features)
+                all_names.extend(names)
+            else:
+                raise ValueError(f"Invalid feature specification: {part}")
+        
+        # Concatenate all features in the specified order
+        combined_features = np.hstack(all_features)
+        
+        if verbose:
+            print(f"   Total features: {len(all_names)} ({' + '.join([str(f.shape[1]) for f in all_features])})")
+        
+        return combined_features, all_names
     
     def _generate_descriptors(self, smiles_series: pd.Series, 
                               descriptor_set: str,

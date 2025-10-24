@@ -40,12 +40,16 @@ env/
 # Reports and outputs
 reports/
 *.log
-*.csv
+*/*.csv
+**/*/*.csv
 *.png
 *.svg
 *.jpg
 *.jpeg
 *.pkl
+
+# Allow root test.csv
+!test.csv
 
 # Jupyter
 .ipynb_checkpoints
