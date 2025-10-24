@@ -400,15 +400,18 @@ class ModelTrainer(BaseAnalyzer):
             self.feature_names = feature_columns
         
         # Remove rows with NaN in features or target
-        if X.dtype == object:
-            valid_mask = pd.notna(X).all(axis=1) & pd.notna(y)
-        else:
-            valid_mask = ~(np.isnan(X).any(axis=1) | np.isnan(y))
+        # Convert X to DataFrame temporarily for consistent NaN handling
+        X_df = pd.DataFrame(X)
+        y_series = pd.Series(y)
         
-        X = X[valid_mask]
-        y = y[valid_mask]
+        # Check for NaN/invalid values
+        valid_mask = X_df.notna().all(axis=1) & y_series.notna()
         
-        if verbose and not valid_mask.all():
+        # Apply mask
+        X = X[valid_mask.values]
+        y = y[valid_mask.values]
+        
+        if verbose and (~valid_mask).any():
             removed = (~valid_mask).sum()
             print(f"   Removed {removed} rows with missing/invalid values")
         
