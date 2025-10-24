@@ -555,37 +555,9 @@ moltrainer -i train.csv -train \
   -o results/
 ```
 
-##### 3. Combined Features
+##### 3. Automatic Fingerprint Length Optimization ⭐
 
-Combine descriptors and fingerprints for maximum information:
-
-```bash
-moltrainer -i train.csv -train \
-  -target activity \
-  -smiles smiles \
-  -feat_type combined \
-  -desc_set basic \
-  -fp_type morgan \
-  -fp_bits 512 \
-  -o results/
-```
-
-This generates: **10 descriptors + 512 fingerprint bits = 522 features**
-
-**Popular Combinations:**
-
-```bash
-# Basic descriptors + MACCS (fast, interpretable)
--feat_type combined -desc_set basic -fp_type maccs
-
-# Extended descriptors + Morgan 1024 (balanced)
--feat_type combined -desc_set extended -fp_type morgan -fp_bits 1024
-
-# All descriptors + Morgan 2048 (comprehensive)
--feat_type combined -desc_set all -fp_type morgan -fp_bits 2048
-```
-
-##### 4. Automatic Fingerprint Length Optimization ⭐
+**IMPORTANT:** Always optimize fingerprint length *before* combining with descriptors for best results.
 
 Automatically find the optimal fingerprint length by training models at different bit sizes:
 
@@ -637,6 +609,87 @@ Best score: 0.9100
 - **Quick search**: `-fp_start 64 -fp_step 64 -fp_max 1024`
 - **Fine search**: `-fp_start 256 -fp_step 32 -fp_max 768`
 - **Comprehensive**: `-fp_start 16 -fp_step 16 -fp_max 2048` (default, slower)
+
+##### 4. Combined Features
+
+Combine descriptors and fingerprints for maximum information:
+
+```bash
+moltrainer -i train.csv -train \
+  -target activity \
+  -smiles smiles \
+  -feat_type combined \
+  -desc_set basic \
+  -fp_type morgan \
+  -fp_bits 512 \
+  -o results/
+```
+
+**Feature Concatenation Order:** `[descriptors, fingerprints]`
+
+This generates: **10 descriptors + 512 fingerprint bits = 522 features**
+
+**Popular Combinations:**
+
+```bash
+# Basic descriptors + MACCS (fast, interpretable)
+-feat_type combined -desc_set basic -fp_type maccs
+
+# Extended descriptors + Morgan 1024 (balanced)
+-feat_type combined -desc_set extended -fp_type morgan -fp_bits 1024
+
+# All descriptors + Morgan 2048 (comprehensive)
+-feat_type combined -desc_set all -fp_type morgan -fp_bits 2048
+```
+
+##### 5. Custom Feature Combinations (Advanced) ⭐
+
+Combine multiple descriptor sets and fingerprints with custom order using `-feat_spec`:
+
+**Format:** `"desc:<set>+fp:<type>:<bits>:<radius>+..."`
+
+**Example - Two Descriptor Sets + Two Fingerprints:**
+
+```bash
+moltrainer -i train.csv -train \
+  -target activity \
+  -smiles smiles \
+  -feat_spec "desc:basic+desc:extended+fp:morgan:1024+fp:maccs" \
+  -o results/
+```
+
+This generates features in order: **[basic descriptors, extended descriptors, Morgan 1024, MACCS]**
+
+**More Examples:**
+
+```bash
+# Three fingerprints with different parameters
+-feat_spec "fp:morgan:512:2+fp:morgan:1024:3+fp:maccs"
+
+# All descriptors + multiple fingerprints
+-feat_spec "desc:all+fp:morgan:2048+fp:rdk:1024+fp:maccs"
+
+# Descriptors sandwiched between fingerprints
+-feat_spec "fp:maccs+desc:extended+fp:morgan:1024"
+```
+
+**Recommended Workflow:**
+
+1. First, optimize fingerprint lengths individually
+2. Then, combine optimized fingerprints with descriptors
+3. Use `-feat_spec` for fine-grained control
+
+```bash
+# Step 1: Find optimal Morgan fingerprint length
+moltrainer -i train.csv -train -target activity -smiles smiles \
+  -feat_type fingerprints -fp_type morgan -optimize_fp -o step1/
+
+# Result: Best fingerprint length = 512 bits
+
+# Step 2: Combine with descriptors using optimized length
+moltrainer -i train.csv -train -target activity -smiles smiles \
+  -feat_spec "desc:extended+fp:morgan:512+fp:maccs" -o step2/
+```
 
 ##### Feature Engineering Best Practices
 

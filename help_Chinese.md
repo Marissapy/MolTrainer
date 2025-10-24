@@ -555,37 +555,9 @@ moltrainer -i train.csv -train \
   -o results/
 ```
 
-##### 3. 组合特征
+##### 3. 自动指纹长度优化 ⭐
 
-组合描述符和指纹以获取最大信息量：
-
-```bash
-moltrainer -i train.csv -train \
-  -target activity \
-  -smiles smiles \
-  -feat_type combined \
-  -desc_set basic \
-  -fp_type morgan \
-  -fp_bits 512 \
-  -o results/
-```
-
-这将生成：**10个描述符 + 512个指纹位 = 522个特征**
-
-**常用组合：**
-
-```bash
-# 基础描述符 + MACCS（快速，可解释）
--feat_type combined -desc_set basic -fp_type maccs
-
-# 扩展描述符 + Morgan 1024（平衡）
--feat_type combined -desc_set extended -fp_type morgan -fp_bits 1024
-
-# 全部描述符 + Morgan 2048（全面）
--feat_type combined -desc_set all -fp_type morgan -fp_bits 2048
-```
-
-##### 4. 自动指纹长度优化 ⭐
+**重要提示：** 为获得最佳结果，应先优化指纹长度，再与描述符组合。
 
 通过在不同位数下训练模型，自动找到最优指纹长度：
 
@@ -637,6 +609,87 @@ Testing 1024 bits... Score: 0.90 (+/- 0.03)
 - **快速搜索**：`-fp_start 64 -fp_step 64 -fp_max 1024`
 - **精细搜索**：`-fp_start 256 -fp_step 32 -fp_max 768`
 - **全面搜索**：`-fp_start 16 -fp_step 16 -fp_max 2048`（默认，较慢）
+
+##### 4. 组合特征
+
+组合描述符和指纹以获取最大信息量：
+
+```bash
+moltrainer -i train.csv -train \
+  -target activity \
+  -smiles smiles \
+  -feat_type combined \
+  -desc_set basic \
+  -fp_type morgan \
+  -fp_bits 512 \
+  -o results/
+```
+
+**特征拼接顺序：** `[描述符, 指纹]`
+
+这将生成：**10个描述符 + 512个指纹位 = 522个特征**
+
+**常用组合：**
+
+```bash
+# 基础描述符 + MACCS（快速，可解释）
+-feat_type combined -desc_set basic -fp_type maccs
+
+# 扩展描述符 + Morgan 1024（平衡）
+-feat_type combined -desc_set extended -fp_type morgan -fp_bits 1024
+
+# 全部描述符 + Morgan 2048（全面）
+-feat_type combined -desc_set all -fp_type morgan -fp_bits 2048
+```
+
+##### 5. 自定义特征组合（高级）⭐
+
+使用 `-feat_spec` 组合多个描述符集和指纹，并自定义顺序：
+
+**格式：** `"desc:<集合>+fp:<类型>:<位数>:<半径>+..."`
+
+**示例 - 两个描述符集 + 两个指纹：**
+
+```bash
+moltrainer -i train.csv -train \
+  -target activity \
+  -smiles smiles \
+  -feat_spec "desc:basic+desc:extended+fp:morgan:1024+fp:maccs" \
+  -o results/
+```
+
+按顺序生成特征：**[基础描述符, 扩展描述符, Morgan 1024, MACCS]**
+
+**更多示例：**
+
+```bash
+# 三个不同参数的指纹
+-feat_spec "fp:morgan:512:2+fp:morgan:1024:3+fp:maccs"
+
+# 全部描述符 + 多个指纹
+-feat_spec "desc:all+fp:morgan:2048+fp:rdk:1024+fp:maccs"
+
+# 指纹夹着描述符
+-feat_spec "fp:maccs+desc:extended+fp:morgan:1024"
+```
+
+**推荐工作流程：**
+
+1. 首先，单独优化指纹长度
+2. 然后，将优化后的指纹与描述符组合
+3. 使用 `-feat_spec` 进行精细控制
+
+```bash
+# 步骤1：找到最优Morgan指纹长度
+moltrainer -i train.csv -train -target activity -smiles smiles \
+  -feat_type fingerprints -fp_type morgan -optimize_fp -o step1/
+
+# 结果：最佳指纹长度 = 512位
+
+# 步骤2：使用优化后的长度与描述符组合
+moltrainer -i train.csv -train -target activity -smiles smiles \
+  -feat_spec "desc:extended+fp:morgan:512+fp:maccs" -o step2/
+```
 
 ##### 特征工程最佳实践
 
