@@ -94,6 +94,57 @@ moltrainer -h
 
 ---
 
+## 更新与版本管理
+
+### 检查当前版本
+
+```bash
+# 方法1：在Python中检查版本
+python -c "import moltrainer; print(f'MolTrainer v{moltrainer.__version__}')"
+
+# 方法2：在帮助中查看版本
+moltrainer -h | head -10
+```
+
+### 更新到最新版本
+
+**标准更新：**
+```bash
+pip install --upgrade --force-reinstall git+https://github.com/Marissapy/MolTrainer.git
+```
+
+**如果使用Conda环境：**
+```bash
+conda activate moltrainer
+pip install --upgrade --force-reinstall git+https://github.com/Marissapy/MolTrainer.git
+```
+
+**如果更新失败：**
+```bash
+# 清除pip缓存并重新安装
+pip cache purge
+pip uninstall moltrainer -y
+pip install git+https://github.com/Marissapy/MolTrainer.git
+```
+
+### 验证更新
+
+```bash
+# 检查新版本
+python -c "import moltrainer; print(moltrainer.__version__)"
+
+# 测试功能
+python -m moltrainer -h
+```
+
+### 版本历史
+
+详细的发布说明请参阅 [CHANGELOG.md](https://github.com/Marissapy/MolTrainer/blob/main/CHANGELOG.md)。
+
+**当前版本：** 0.1.0（2025年10月）
+
+---
+
 ## 快速开始
 
 ```bash

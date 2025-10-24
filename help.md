@@ -94,6 +94,57 @@ moltrainer -h
 
 ---
 
+## Update & Version Management
+
+### Check Current Version
+
+```bash
+# Method 1: Check version in Python
+python -c "import moltrainer; print(f'MolTrainer v{moltrainer.__version__}')"
+
+# Method 2: View version in help
+moltrainer -h | head -10
+```
+
+### Update to Latest Version
+
+**Standard Update:**
+```bash
+pip install --upgrade --force-reinstall git+https://github.com/Marissapy/MolTrainer.git
+```
+
+**If Using Conda Environment:**
+```bash
+conda activate moltrainer
+pip install --upgrade --force-reinstall git+https://github.com/Marissapy/MolTrainer.git
+```
+
+**If Update Fails:**
+```bash
+# Clear pip cache and reinstall
+pip cache purge
+pip uninstall moltrainer -y
+pip install git+https://github.com/Marissapy/MolTrainer.git
+```
+
+### Verify Update
+
+```bash
+# Check new version
+python -c "import moltrainer; print(moltrainer.__version__)"
+
+# Test functionality
+python -m moltrainer -h
+```
+
+### Version History
+
+See [CHANGELOG.md](https://github.com/Marissapy/MolTrainer/blob/main/CHANGELOG.md) for detailed release notes.
+
+**Current Version:** 0.1.0 (October 2025)
+
+---
+
 ## Quick Start
 
 ```bash

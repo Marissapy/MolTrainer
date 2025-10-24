@@ -65,11 +65,61 @@ moltrainer -predict -load_model results/model.pkl -i new_data.csv -o predictions
 
 ---
 
-## 📦 Update
+## 📦 Update MolTrainer
+
+### Check Current Version
 
 ```bash
-# Update to latest version
+# Method 1: Check version in Python
+python -c "import moltrainer; print(f'MolTrainer v{moltrainer.__version__}')"
+
+# Method 2: Check version from command line
+moltrainer -h | head -10
+```
+
+### Update to Latest Version
+
+**Standard Update:**
+```bash
 pip install --upgrade --force-reinstall git+https://github.com/Marissapy/MolTrainer.git
+```
+
+**If Using Conda Environment:**
+```bash
+conda activate moltrainer
+pip install --upgrade --force-reinstall git+https://github.com/Marissapy/MolTrainer.git
+```
+
+**If Update Fails:**
+```bash
+# Clear cache and reinstall
+pip cache purge
+pip uninstall moltrainer -y
+pip install git+https://github.com/Marissapy/MolTrainer.git
+```
+
+### Version History
+
+See [CHANGELOG.md](CHANGELOG.md) for detailed release notes.
+
+**Current Version:** 0.1.0 (2025-10-24)
+
+**Recent Updates:**
+- ✅ Fixed data preparation array comparison error
+- ✅ Added comprehensive parameter guide (10 scenarios)
+- ✅ Custom feature combinations support
+- ✅ Extended documentation (English + Chinese)
+
+### Verify Update
+
+After updating, verify the installation:
+
+```bash
+# Check if command works
+python -m moltrainer -h
+
+# Test basic functionality
+python -c "import moltrainer; from moltrainer.cli import MolTrainerCLI; print('✅ MolTrainer updated successfully')"
 ```
 
 ---
