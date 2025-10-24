@@ -161,21 +161,51 @@ conda install -c conda-forge xgboost lightgbm
 # 编辑requirements.txt，注释掉xgboost和lightgbm行
 ```
 
-### 3. 找不到moltrainer命令
+### 3. 找不到moltrainer命令 ⭐ 常见问题
 
-**问题**：安装后运行 `moltrainer` 提示命令不存在
+**问题**：安装后运行 `moltrainer` 提示 `command not found`
 
-**解决方案**：
+**原因**：用户模式安装时，可执行文件在 `~/.local/bin` (Linux/Mac) 或 `%APPDATA%\Python\Scripts` (Windows)，但这些目录可能不在PATH中。
+
+**解决方案A：直接使用Python模块（最简单）**
 ```bash
-# 方案1：检查pip安装路径是否在PATH中
-python -m pip show moltrainer
-
-# 方案2：直接使用python模块运行
+# 直接运行
 python -m moltrainer -h
 
-# 方案3：重新安装
-pip uninstall moltrainer
-pip install -e .
+# 或创建别名（Linux/Mac）
+echo 'alias moltrainer="python -m moltrainer"' >> ~/.bashrc
+source ~/.bashrc
+moltrainer -h
+
+# Windows PowerShell创建别名
+echo 'function moltrainer { python -m moltrainer $args }' >> $PROFILE
+```
+
+**解决方案B：添加到PATH（推荐）**
+```bash
+# Linux/Mac
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+
+# Windows (以管理员身份运行PowerShell)
+[Environment]::SetEnvironmentVariable("Path", "$env:Path;$env:APPDATA\Python\Scripts", "User")
+```
+
+**解决方案C：在conda环境中安装**
+```bash
+conda create -n moltrainer python=3.9
+conda activate moltrainer
+pip install git+https://github.com/Marissapy/MolTrainer.git
+# 现在可以直接使用 moltrainer 命令
+```
+
+**解决方案D：使用完整路径**
+```bash
+# Linux/Mac
+~/.local/bin/moltrainer -h
+
+# Windows
+%APPDATA%\Python\Scripts\moltrainer.exe -h
 ```
 
 ### 4. 权限错误

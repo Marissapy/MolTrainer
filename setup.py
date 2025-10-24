@@ -28,12 +28,41 @@ setup(
     ],
     python_requires=">=3.8",
     install_requires=[
+        # Core Data Processing
         "pandas>=2.0.0",
         "numpy>=1.24.0",
+        
+        # Machine Learning
         "scikit-learn>=1.3.0",
+        
+        # Cheminformatics
+        # Note: RDKit must be installed separately
+        # Recommended: conda install -c conda-forge rdkit
+        # Alternative: pip install rdkit-pypi
+        # RDKit is NOT auto-installed to avoid platform issues
+        
+        # Visualization
+        "matplotlib>=3.7.0",
+        "seaborn>=0.12.0",
+        
+        # Configuration Files
+        "pyyaml>=6.0",
+        
+        # CLI and Output Formatting
         "art>=6.0",
         "colorama>=0.4.6",
     ],
+    extras_require={
+        "advanced": [
+            "xgboost>=2.0.0",
+            "lightgbm>=4.0.0",
+        ],
+        "dev": [
+            "pytest>=7.0.0",
+            "black>=23.0.0",
+            "flake8>=6.0.0",
+        ],
+    },
     entry_points={
         "console_scripts": [
             "moltrainer=moltrainer.cli:main",

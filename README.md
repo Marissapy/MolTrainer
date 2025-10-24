@@ -55,18 +55,21 @@
 
 ### Installation
 
-#### Prerequisites
+#### Step 1: Install RDKit (Required)
+
+RDKit **must** be installed **before** MolTrainer:
+
 ```bash
-# Install RDKit (required for SMILES processing)
+# Method A: Using Conda (Recommended)
 conda install -c conda-forge rdkit
 
-# OR using pip
+# Method B: Using pip
 pip install rdkit-pypi
 ```
 
-#### Install MolTrainer
+#### Step 2: Install MolTrainer
 
-**Option 1: Clone from GitHub (Recommended)**
+**Option 1: Clone from GitHub (Recommended for development)**
 ```bash
 git clone https://github.com/Marissapy/MolTrainer.git
 cd MolTrainer
@@ -78,13 +81,26 @@ pip install -e .
 pip install git+https://github.com/Marissapy/MolTrainer.git
 ```
 
-#### Optional Dependencies
+**Option 3: In a Conda Environment (Cleanest)**
 ```bash
-# For advanced ML models
+# Create and activate environment
+conda create -n moltrainer python=3.9
+conda activate moltrainer
+
+# Install RDKit
+conda install -c conda-forge rdkit
+
+# Install MolTrainer (will auto-install other dependencies)
+pip install git+https://github.com/Marissapy/MolTrainer.git
+```
+
+#### Step 3: Optional Dependencies
+```bash
+# For advanced ML models (XGBoost, LightGBM)
 pip install xgboost lightgbm
 
-# For configuration files
-pip install pyyaml
+# Or install with extras
+pip install git+https://github.com/Marissapy/MolTrainer.git[advanced]
 ```
 
 ### Basic Usage
@@ -92,6 +108,7 @@ pip install pyyaml
 ```bash
 # View help
 moltrainer -h
+# Or if command not found: python -m moltrainer -h
 
 # Descriptive statistics
 moltrainer -i data.csv -desc_stats
@@ -111,6 +128,9 @@ moltrainer -i train.csv -train \
 # Make predictions
 moltrainer -predict -load_model results/model.pkl -i new_data.csv -o predictions.csv
 ```
+
+> **Note**: If `moltrainer` command is not found, use `python -m moltrainer` instead.
+> See [troubleshooting](#-troubleshooting) below.
 
 ---
 
@@ -247,6 +267,65 @@ MolTrainer/
 - **RDKit**: Daylight-like fingerprints
 - **AtomPair**: Atom pair fingerprints
 - **Topological**: Topological torsion fingerprints
+
+---
+
+## 🔧 Troubleshooting
+
+### Command Not Found: `moltrainer`
+
+If you get `command not found` error after installation:
+
+**Quick Fix (Use Python module directly):**
+```bash
+python -m moltrainer -h
+```
+
+**Permanent Fix (Add to PATH):**
+```bash
+# Linux/Mac
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+
+# Or create an alias
+echo 'alias moltrainer="python -m moltrainer"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+**Best Solution (Use Conda environment):**
+```bash
+conda create -n moltrainer python=3.9
+conda activate moltrainer
+conda install -c conda-forge rdkit
+pip install git+https://github.com/Marissapy/MolTrainer.git
+# Now moltrainer command works directly
+```
+
+### Missing Dependencies After Installation
+
+The current version auto-installs: `pandas`, `numpy`, `scikit-learn`, `matplotlib`, `seaborn`, `pyyaml`, `art`, `colorama`
+
+If you encounter import errors:
+```bash
+# Install missing dependencies
+pip install matplotlib seaborn pyyaml
+
+# Or reinstall with upgraded dependencies
+pip install --upgrade --force-reinstall git+https://github.com/Marissapy/MolTrainer.git
+```
+
+### RDKit Import Error
+
+RDKit must be installed separately:
+```bash
+# Recommended
+conda install -c conda-forge rdkit
+
+# Alternative
+pip install rdkit-pypi
+```
+
+For more troubleshooting, see [INSTALL_GUIDE.md](INSTALL_GUIDE.md).
 
 ---
 
