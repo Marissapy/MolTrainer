@@ -163,6 +163,483 @@ COMP002,0.65,60.10,20.23,active
 
 ---
 
+## 参数指南与常见场景
+
+### 理解参数
+
+#### 必需与可选参数
+
+**始终必需：**
+- `-i <input.csv>` - 所有操作的输入文件
+
+**操作特定必需：**
+- **训练**: `-target <列名>` + (`-smiles <列名>` 或 `-features <列名>`)
+- **清洗**: `-o <output.csv>` (输出文件)
+- **可视化**: `-o <plot.png>` (输出文件)
+- **预测**: `-load_model <model.pkl>` + `-o <output.csv>`
+
+#### 参数规则
+
+**规则1：SMILES vs Features（互斥）**
+
+训练时必须选择其中一个：
+
+```bash
+# 选项A：使用SMILES进行特征化
+-smiles <列名>
+
+# 选项B：使用现有的数值特征
+-features "<列1>,<列2>,<列3>"
+
+# ❌ 错误：不能同时使用
+-smiles smiles -features "mw,logp"  # 错误！
+```
+
+**规则2：任务类型检测**
+
+```bash
+# 自动检测（默认）- 推荐
+-task auto
+
+# 如果自动检测失败，显式指定
+-task classification  # 分类任务
+-task regression      # 回归任务
+```
+
+**规则3：输出要求**
+
+| 模块 | 输出参数 | 需要提供什么 |
+|------|---------|-------------|
+| `-desc_stats` | 可选 `-o` | 文件路径（文本文件）|
+| `-clean` | **必需** `-o` | 输出CSV文件 |
+| `-visualize` | **必需** `-o` | 图表文件(.png/.svg/.jpg) |
+| `-split` | 自动生成 | 添加`_train.csv`, `_val.csv`, `_test.csv` |
+| `-train` | **必需** `-o` | 输出文件夹 |
+| `-predict` | **必需** `-o` | 输出CSV文件 |
+| `-sample` | **必需** `-o` | 输出CSV文件 |
+
+### 常见场景完整示例
+
+#### 场景1：基于SMILES的分类
+
+**目标：** 从SMILES字符串预测活性
+
+**数据示例：**
+```csv
+smiles,activity
+CCO,active
+c1ccccc1,inactive
+CC(C)O,active
+```
+
+**命令：**
+```bash
+moltrainer -i data.csv -train \
+  -target activity \
+  -smiles smiles \
+  -o results/
+```
+
+**发生了什么：**
+1. 加载`data.csv`
+2. 从`smiles`列提取分子描述符
+3. 检测分类任务（分类标签）
+4. 训练随机森林模型
+5. 保存模型和报告到`results/`文件夹
+
+**可选增强：**
+```bash
+# 添加超参数搜索
+moltrainer -i data.csv -train \
+  -target activity \
+  -smiles smiles \
+  -search random \
+  -search_depth deep \
+  -o results/
+
+# 使用不同模型
+moltrainer -i data.csv -train \
+  -target activity \
+  -smiles smiles \
+  -model xgb \
+  -o results/
+
+# 使用指纹代替描述符
+moltrainer -i data.csv -train \
+  -target activity \
+  -smiles smiles \
+  -feat_type fingerprints \
+  -fp_type morgan \
+  -fp_bits 1024 \
+  -o results/
+```
+
+#### 场景2：基于SMILES的回归与自定义特征
+
+**目标：** 使用Morgan指纹预测IC50值
+
+**数据示例：**
+```csv
+compound_id,smiles,ic50
+COMP001,CCO,10.5
+COMP002,CC(C)O,15.2
+COMP003,c1ccccc1,45.8
+```
+
+**命令：**
+```bash
+moltrainer -i data.csv -train \
+  -target ic50 \
+  -smiles smiles \
+  -feat_type fingerprints \
+  -fp_type morgan \
+  -fp_bits 2048 \
+  -task regression \
+  -o ic50_model/
+```
+
+**发生了什么：**
+1. 从SMILES提取Morgan指纹（2048位）
+2. 训练回归模型预测IC50
+3. 保存模型到`ic50_model/`文件夹
+
+#### 场景3：使用预先计算的数值特征
+
+**目标：** 使用现有分子描述符训练模型
+
+**数据示例：**
+```csv
+compound_id,mw,logp,tpsa,activity
+COMP001,46.07,0.23,20.23,active
+COMP002,60.10,0.65,20.23,active
+COMP003,78.11,2.05,0.00,inactive
+```
+
+**命令：**
+```bash
+moltrainer -i data.csv -train \
+  -target activity \
+  -features "mw,logp,tpsa" \
+  -o results/
+```
+
+**重要提示：**
+- ✅ 对数值列使用`-features`
+- ❌ 不要使用`-features smiles` - SMILES是文本！
+- ✅ 多列：使用逗号分隔的字符串
+- ❌ 不要使用空格：`"mw, logp"`可能导致问题
+
+#### 场景4：训练前的数据清洗
+
+**目标：** 清洗数据，然后训练模型
+
+**步骤1：清洗数据**
+```bash
+moltrainer -i raw_data.csv -clean \
+  -remove_duplicates \
+  -validate_smiles \
+  -handle_missing drop \
+  -o cleaned_data.csv
+```
+
+**步骤2：训练模型**
+```bash
+moltrainer -i cleaned_data.csv -train \
+  -target activity \
+  -smiles smiles \
+  -o model_results/
+```
+
+#### 场景5：完整工作流程（含数据分割）
+
+**目标：** 清洗 → 分割 → 训练 → 预测
+
+**步骤1：清洗**
+```bash
+moltrainer -i raw.csv -clean \
+  -validate_smiles \
+  -remove_duplicates \
+  -o cleaned.csv
+```
+
+**步骤2：分割**
+```bash
+moltrainer -i cleaned.csv -split \
+  -train_ratio 0.7 \
+  -val_ratio 0.15 \
+  -test_ratio 0.15
+```
+生成：`cleaned_train.csv`, `cleaned_val.csv`, `cleaned_test.csv`
+
+**步骤3：训练**
+```bash
+moltrainer -i cleaned_train.csv -train \
+  -target activity \
+  -smiles smiles \
+  -val cleaned_val.csv \
+  -test cleaned_test.csv \
+  -o final_model/
+```
+
+**步骤4：预测**
+```bash
+moltrainer -predict \
+  -load_model final_model/model.pkl \
+  -i new_compounds.csv \
+  -o predictions.csv
+```
+
+#### 场景6：超参数优化
+
+**目标：** 找到最佳模型超参数
+
+**快速搜索（快）：**
+```bash
+moltrainer -i data.csv -train \
+  -target activity \
+  -smiles smiles \
+  -search random \
+  -search_iter 20 \
+  -o quick_search/
+```
+
+**深度搜索（彻底）：**
+```bash
+moltrainer -i data.csv -train \
+  -target activity \
+  -smiles smiles \
+  -model xgb \
+  -search random \
+  -search_depth deep \
+  -search_iter 100 \
+  -o deep_search/
+```
+
+#### 场景7：特征工程优化
+
+**目标：** 找到最优指纹长度
+
+**步骤1：优化指纹**
+```bash
+moltrainer -i data.csv -train \
+  -target activity \
+  -smiles smiles \
+  -feat_type fingerprints \
+  -fp_type morgan \
+  -optimize_fp \
+  -fp_start 64 \
+  -fp_step 64 \
+  -fp_max 1024 \
+  -o fp_optimization/
+```
+
+**结果：** 报告最佳指纹长度（例如，512位）
+
+**步骤2：使用优化后的长度训练**
+```bash
+moltrainer -i data.csv -train \
+  -target activity \
+  -smiles smiles \
+  -feat_spec "desc:extended+fp:morgan:512" \
+  -o final_model/
+```
+
+#### 场景8：高级特征组合
+
+**目标：** 组合多个描述符集和指纹
+
+**命令：**
+```bash
+moltrainer -i data.csv -train \
+  -target activity \
+  -smiles smiles \
+  -feat_spec "desc:basic+desc:extended+fp:morgan:1024+fp:maccs" \
+  -model xgb \
+  -search random \
+  -o advanced_model/
+```
+
+**特征顺序：** [基础描述符, 扩展描述符, Morgan 1024, MACCS]
+
+#### 场景9：比较多个模型
+
+**目标：** 用不同算法训练相同数据
+
+```bash
+# 随机森林
+moltrainer -i data.csv -train -target activity -smiles smiles \
+  -model rf -o models/rf/
+
+# XGBoost
+moltrainer -i data.csv -train -target activity -smiles smiles \
+  -model xgb -o models/xgb/
+
+# LightGBM
+moltrainer -i data.csv -train -target activity -smiles smiles \
+  -model lgb -o models/lgb/
+
+# SVM
+moltrainer -i data.csv -train -target activity -smiles smiles \
+  -model svm -o models/svm/
+```
+
+#### 场景10：使用配置文件
+
+**目标：** 用配置文件管理复杂实验
+
+**创建配置：**
+```bash
+moltrainer -create_config my_experiment.yaml
+```
+
+**编辑`my_experiment.yaml`：**
+```yaml
+input_file: "data.csv"
+output_folder: "experiment_results/"
+target_column: "activity"
+smiles_column: "smiles"
+model_type: "xgb"
+task: "classification"
+search_method: "random"
+search_depth: "deep"
+feature_type: "combined"
+descriptor_set: "extended"
+fingerprint_type: "morgan"
+fingerprint_bits: 1024
+```
+
+**运行实验：**
+```bash
+moltrainer -config my_experiment.yaml
+```
+
+### 常见错误与解决方案
+
+#### 错误1："Target column must be specified"
+
+**原因：** 缺少`-target`参数
+
+**解决方案：**
+```bash
+# ❌ 错误
+moltrainer -i data.csv -train -smiles smiles -o results/
+
+# ✅ 正确
+moltrainer -i data.csv -train -target activity -smiles smiles -o results/
+```
+
+#### 错误2："Must specify either -smiles or -features"
+
+**原因：** 忘记指定特征来源
+
+**解决方案：**
+```bash
+# ❌ 错误
+moltrainer -i data.csv -train -target activity -o results/
+
+# ✅ 正确（选项A：SMILES）
+moltrainer -i data.csv -train -target activity -smiles smiles -o results/
+
+# ✅ 正确（选项B：数值特征）
+moltrainer -i data.csv -train -target activity -features "mw,logp" -o results/
+```
+
+#### 错误3："could not convert string to float: 'CCO'"
+
+**原因：** 使用了`-features smiles`而不是`-smiles smiles`
+
+**解决方案：**
+```bash
+# ❌ 错误：将SMILES当作数值特征
+moltrainer -i data.csv -train -target activity -features smiles -o results/
+
+# ✅ 正确：特征化SMILES
+moltrainer -i data.csv -train -target activity -smiles smiles -o results/
+```
+
+#### 错误4："Output file is required"
+
+**原因：** 缺少需要输出的操作的`-o`
+
+**解决方案：**
+```bash
+# ❌ 错误
+moltrainer -i data.csv -clean -validate_smiles
+
+# ✅ 正确
+moltrainer -i data.csv -clean -validate_smiles -o cleaned.csv
+```
+
+#### 错误5："SMILES column not found"
+
+**原因：** 列名不匹配
+
+**解决方案：**
+```bash
+# 首先检查CSV表头
+head -1 data.csv
+# 输出：compound_id,SMILES,activity
+
+# 使用准确的列名（区分大小写）
+moltrainer -i data.csv -train -target activity -smiles SMILES -o results/
+```
+
+### 参数快速参考
+
+#### 输入/输出
+```bash
+-i, -input FILE           # 输入CSV文件（始终必需）
+-o, -output FILE/FOLDER   # 输出文件或文件夹（部分操作必需）
+-v, --verbose             # 显示详细进度
+```
+
+#### 训练核心
+```bash
+-train                    # 启用训练模式
+-target COLUMN            # 目标列名（必需）
+-smiles COLUMN            # SMILES列用于特征化
+-features "col1,col2"     # 数值特征列（-smiles的替代）
+-task TYPE                # auto/classification/regression（默认：auto）
+```
+
+#### 模型选择
+```bash
+-model TYPE               # rf/svm/xgb/lgb/lr（默认：rf）
+```
+
+#### 特征工程
+```bash
+-feat_type TYPE           # descriptors/fingerprints/combined（默认：descriptors）
+-desc_set SET             # basic/extended/all（默认：basic）
+-fp_type TYPE             # morgan/maccs/rdk/atompair/topological（默认：morgan）
+-fp_bits N                # 指纹位数（默认：2048）
+-fp_radius N              # Morgan半径（默认：2）
+-feat_spec "..."          # 自定义特征组合
+```
+
+#### 优化
+```bash
+-search METHOD            # none/grid/random（默认：none）
+-search_depth LEVEL       # shallow/deep（默认：shallow）
+-optimize_fp              # 优化指纹长度
+```
+
+#### 数据分割
+```bash
+-val FILE                 # 验证集文件
+-test FILE                # 测试集文件
+-auto_split MODE          # 3way/2way/none（默认：3way如果没有val/test）
+```
+
+#### 预测
+```bash
+-predict                  # 启用预测模式
+-load_model FILE          # 训练好的模型文件（.pkl）
+-model_info FILE          # 显示模型信息
+```
+
+---
+
 ## 核心模块
 
 ### 描述性统计

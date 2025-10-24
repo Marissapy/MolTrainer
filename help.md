@@ -163,6 +163,483 @@ COMP002,0.65,60.10,20.23,active
 
 ---
 
+## Parameter Guide and Common Scenarios
+
+### Understanding Parameters
+
+#### Required vs Optional Parameters
+
+**Always Required:**
+- `-i <input.csv>` - Input file for all operations
+
+**Operation-Specific Required:**
+- **Training**: `-target <column>` + (`-smiles <column>` OR `-features <columns>`)
+- **Cleaning**: `-o <output.csv>` (output file)
+- **Visualization**: `-o <plot.png>` (output file)
+- **Prediction**: `-load_model <model.pkl>` + `-o <output.csv>`
+
+#### Parameter Rules
+
+**Rule 1: SMILES vs Features (Mutually Exclusive)**
+
+You must choose ONE of these for training:
+
+```bash
+# Option A: Use SMILES for featurization
+-smiles <column_name>
+
+# Option B: Use existing numeric features
+-features "<col1>,<col2>,<col3>"
+
+# ❌ WRONG: Cannot use both
+-smiles smiles -features "mw,logp"  # ERROR!
+```
+
+**Rule 2: Task Type Detection**
+
+```bash
+# Auto-detect (default) - recommended
+-task auto
+
+# Explicitly specify if auto-detection fails
+-task classification  # For categorical targets
+-task regression      # For numeric targets
+```
+
+**Rule 3: Output Requirements**
+
+| Module | Output Parameter | What to Provide |
+|--------|------------------|-----------------|
+| `-desc_stats` | Optional `-o` | File path (text file) |
+| `-clean` | **Required** `-o` | Output CSV file |
+| `-visualize` | **Required** `-o` | Plot file (.png/.svg/.jpg) |
+| `-split` | Auto-generated | Adds `_train.csv`, `_val.csv`, `_test.csv` |
+| `-train` | **Required** `-o` | Output folder |
+| `-predict` | **Required** `-o` | Output CSV file |
+| `-sample` | **Required** `-o` | Output CSV file |
+
+### Common Scenarios with Complete Examples
+
+#### Scenario 1: Basic SMILES-Based Classification
+
+**Goal:** Predict activity from SMILES strings
+
+**Data Example:**
+```csv
+smiles,activity
+CCO,active
+c1ccccc1,inactive
+CC(C)O,active
+```
+
+**Command:**
+```bash
+moltrainer -i data.csv -train \
+  -target activity \
+  -smiles smiles \
+  -o results/
+```
+
+**What happens:**
+1. Loads `data.csv`
+2. Extracts molecular descriptors from `smiles` column
+3. Detects classification task (categorical target)
+4. Trains Random Forest model
+5. Saves model and reports to `results/` folder
+
+**Optional enhancements:**
+```bash
+# Add hyperparameter search
+moltrainer -i data.csv -train \
+  -target activity \
+  -smiles smiles \
+  -search random \
+  -search_depth deep \
+  -o results/
+
+# Use different model
+moltrainer -i data.csv -train \
+  -target activity \
+  -smiles smiles \
+  -model xgb \
+  -o results/
+
+# Use fingerprints instead of descriptors
+moltrainer -i data.csv -train \
+  -target activity \
+  -smiles smiles \
+  -feat_type fingerprints \
+  -fp_type morgan \
+  -fp_bits 1024 \
+  -o results/
+```
+
+#### Scenario 2: SMILES-Based Regression with Custom Features
+
+**Goal:** Predict IC50 values using Morgan fingerprints
+
+**Data Example:**
+```csv
+compound_id,smiles,ic50
+COMP001,CCO,10.5
+COMP002,CC(C)O,15.2
+COMP003,c1ccccc1,45.8
+```
+
+**Command:**
+```bash
+moltrainer -i data.csv -train \
+  -target ic50 \
+  -smiles smiles \
+  -feat_type fingerprints \
+  -fp_type morgan \
+  -fp_bits 2048 \
+  -task regression \
+  -o ic50_model/
+```
+
+**What happens:**
+1. Extracts Morgan fingerprints (2048 bits) from SMILES
+2. Trains regression model to predict IC50
+3. Saves model to `ic50_model/` folder
+
+#### Scenario 3: Using Pre-Calculated Numeric Features
+
+**Goal:** Train model using existing molecular descriptors
+
+**Data Example:**
+```csv
+compound_id,mw,logp,tpsa,activity
+COMP001,46.07,0.23,20.23,active
+COMP002,60.10,0.65,20.23,active
+COMP003,78.11,2.05,0.00,inactive
+```
+
+**Command:**
+```bash
+moltrainer -i data.csv -train \
+  -target activity \
+  -features "mw,logp,tpsa" \
+  -o results/
+```
+
+**Important Notes:**
+- ✅ Use `-features` for numeric columns
+- ❌ Do NOT use `-features smiles` - SMILES is text!
+- ✅ Multiple columns: use comma-separated string
+- ❌ Do NOT use spaces: `"mw, logp"` might cause issues
+
+#### Scenario 4: Data Cleaning Before Training
+
+**Goal:** Clean data, then train model
+
+**Step 1: Clean data**
+```bash
+moltrainer -i raw_data.csv -clean \
+  -remove_duplicates \
+  -validate_smiles \
+  -handle_missing drop \
+  -o cleaned_data.csv
+```
+
+**Step 2: Train model**
+```bash
+moltrainer -i cleaned_data.csv -train \
+  -target activity \
+  -smiles smiles \
+  -o model_results/
+```
+
+#### Scenario 5: Complete Workflow with Data Splitting
+
+**Goal:** Clean → Split → Train → Predict
+
+**Step 1: Clean**
+```bash
+moltrainer -i raw.csv -clean \
+  -validate_smiles \
+  -remove_duplicates \
+  -o cleaned.csv
+```
+
+**Step 2: Split**
+```bash
+moltrainer -i cleaned.csv -split \
+  -train_ratio 0.7 \
+  -val_ratio 0.15 \
+  -test_ratio 0.15
+```
+Creates: `cleaned_train.csv`, `cleaned_val.csv`, `cleaned_test.csv`
+
+**Step 3: Train**
+```bash
+moltrainer -i cleaned_train.csv -train \
+  -target activity \
+  -smiles smiles \
+  -val cleaned_val.csv \
+  -test cleaned_test.csv \
+  -o final_model/
+```
+
+**Step 4: Predict**
+```bash
+moltrainer -predict \
+  -load_model final_model/model.pkl \
+  -i new_compounds.csv \
+  -o predictions.csv
+```
+
+#### Scenario 6: Hyperparameter Optimization
+
+**Goal:** Find best model hyperparameters
+
+**Quick search (fast):**
+```bash
+moltrainer -i data.csv -train \
+  -target activity \
+  -smiles smiles \
+  -search random \
+  -search_iter 20 \
+  -o quick_search/
+```
+
+**Deep search (thorough):**
+```bash
+moltrainer -i data.csv -train \
+  -target activity \
+  -smiles smiles \
+  -model xgb \
+  -search random \
+  -search_depth deep \
+  -search_iter 100 \
+  -o deep_search/
+```
+
+#### Scenario 7: Feature Engineering Optimization
+
+**Goal:** Find optimal fingerprint length
+
+**Step 1: Optimize fingerprint**
+```bash
+moltrainer -i data.csv -train \
+  -target activity \
+  -smiles smiles \
+  -feat_type fingerprints \
+  -fp_type morgan \
+  -optimize_fp \
+  -fp_start 64 \
+  -fp_step 64 \
+  -fp_max 1024 \
+  -o fp_optimization/
+```
+
+**Result:** Reports best fingerprint length (e.g., 512 bits)
+
+**Step 2: Train with optimized length**
+```bash
+moltrainer -i data.csv -train \
+  -target activity \
+  -smiles smiles \
+  -feat_spec "desc:extended+fp:morgan:512" \
+  -o final_model/
+```
+
+#### Scenario 8: Advanced Feature Combination
+
+**Goal:** Combine multiple descriptor sets and fingerprints
+
+**Command:**
+```bash
+moltrainer -i data.csv -train \
+  -target activity \
+  -smiles smiles \
+  -feat_spec "desc:basic+desc:extended+fp:morgan:1024+fp:maccs" \
+  -model xgb \
+  -search random \
+  -o advanced_model/
+```
+
+**Feature order:** [basic descriptors, extended descriptors, Morgan 1024, MACCS]
+
+#### Scenario 9: Comparing Multiple Models
+
+**Goal:** Train same data with different algorithms
+
+```bash
+# Random Forest
+moltrainer -i data.csv -train -target activity -smiles smiles \
+  -model rf -o models/rf/
+
+# XGBoost
+moltrainer -i data.csv -train -target activity -smiles smiles \
+  -model xgb -o models/xgb/
+
+# LightGBM
+moltrainer -i data.csv -train -target activity -smiles smiles \
+  -model lgb -o models/lgb/
+
+# SVM
+moltrainer -i data.csv -train -target activity -smiles smiles \
+  -model svm -o models/svm/
+```
+
+#### Scenario 10: Using Configuration Files
+
+**Goal:** Manage complex experiments with config files
+
+**Create config:**
+```bash
+moltrainer -create_config my_experiment.yaml
+```
+
+**Edit `my_experiment.yaml`:**
+```yaml
+input_file: "data.csv"
+output_folder: "experiment_results/"
+target_column: "activity"
+smiles_column: "smiles"
+model_type: "xgb"
+task: "classification"
+search_method: "random"
+search_depth: "deep"
+feature_type: "combined"
+descriptor_set: "extended"
+fingerprint_type: "morgan"
+fingerprint_bits: 1024
+```
+
+**Run experiment:**
+```bash
+moltrainer -config my_experiment.yaml
+```
+
+### Common Errors and Solutions
+
+#### Error 1: "Target column must be specified"
+
+**Cause:** Missing `-target` parameter
+
+**Solution:**
+```bash
+# ❌ Wrong
+moltrainer -i data.csv -train -smiles smiles -o results/
+
+# ✅ Correct
+moltrainer -i data.csv -train -target activity -smiles smiles -o results/
+```
+
+#### Error 2: "Must specify either -smiles or -features"
+
+**Cause:** Forgot to specify feature source
+
+**Solution:**
+```bash
+# ❌ Wrong
+moltrainer -i data.csv -train -target activity -o results/
+
+# ✅ Correct (Option A: SMILES)
+moltrainer -i data.csv -train -target activity -smiles smiles -o results/
+
+# ✅ Correct (Option B: Numeric features)
+moltrainer -i data.csv -train -target activity -features "mw,logp" -o results/
+```
+
+#### Error 3: "could not convert string to float: 'CCO'"
+
+**Cause:** Used `-features smiles` instead of `-smiles smiles`
+
+**Solution:**
+```bash
+# ❌ Wrong: treats SMILES as numeric feature
+moltrainer -i data.csv -train -target activity -features smiles -o results/
+
+# ✅ Correct: featurizes SMILES
+moltrainer -i data.csv -train -target activity -smiles smiles -o results/
+```
+
+#### Error 4: "Output file is required"
+
+**Cause:** Missing `-o` for operations that need it
+
+**Solution:**
+```bash
+# ❌ Wrong
+moltrainer -i data.csv -clean -validate_smiles
+
+# ✅ Correct
+moltrainer -i data.csv -clean -validate_smiles -o cleaned.csv
+```
+
+#### Error 5: "SMILES column not found"
+
+**Cause:** Column name doesn't match
+
+**Solution:**
+```bash
+# Check your CSV headers first
+head -1 data.csv
+# Output: compound_id,SMILES,activity
+
+# Use exact column name (case-sensitive)
+moltrainer -i data.csv -train -target activity -smiles SMILES -o results/
+```
+
+### Parameter Quick Reference
+
+#### Input/Output
+```bash
+-i, -input FILE           # Input CSV file (always required)
+-o, -output FILE/FOLDER   # Output file or folder (required for some operations)
+-v, --verbose             # Show detailed progress
+```
+
+#### Training Core
+```bash
+-train                    # Enable training mode
+-target COLUMN            # Target column name (required)
+-smiles COLUMN            # SMILES column for featurization
+-features "col1,col2"     # Numeric feature columns (alternative to -smiles)
+-task TYPE                # auto/classification/regression (default: auto)
+```
+
+#### Model Selection
+```bash
+-model TYPE               # rf/svm/xgb/lgb/lr (default: rf)
+```
+
+#### Feature Engineering
+```bash
+-feat_type TYPE           # descriptors/fingerprints/combined (default: descriptors)
+-desc_set SET             # basic/extended/all (default: basic)
+-fp_type TYPE             # morgan/maccs/rdk/atompair/topological (default: morgan)
+-fp_bits N                # Fingerprint bits (default: 2048)
+-fp_radius N              # Morgan radius (default: 2)
+-feat_spec "..."          # Custom feature combination
+```
+
+#### Optimization
+```bash
+-search METHOD            # none/grid/random (default: none)
+-search_depth LEVEL       # shallow/deep (default: shallow)
+-optimize_fp              # Optimize fingerprint length
+```
+
+#### Data Splitting
+```bash
+-val FILE                 # Validation file
+-test FILE                # Test file
+-auto_split MODE          # 3way/2way/none (default: 3way if no val/test)
+```
+
+#### Prediction
+```bash
+-predict                  # Enable prediction mode
+-load_model FILE          # Trained model file (.pkl)
+-model_info FILE          # Display model information
+```
+
+---
+
 ## Core Modules
 
 ### Descriptive Statistics
