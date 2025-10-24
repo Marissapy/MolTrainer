@@ -703,7 +703,7 @@ EXAMPLES:
 DOCUMENTATION:
   Detailed docs: help.md (English) or help_Chinese.md (中文)
   Reports: Automatically saved to reports/ directory
-  GitHub: https://github.com/yourusername/moltrainer
+  GitHub: https://github.com/Marissapy/MolTrainer
 """
         print(help_text)
 

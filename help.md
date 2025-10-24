@@ -67,7 +67,7 @@ pip install rdkit-pypi
 **Editable Installation (Recommended for Development):**
 
 ```bash
-git clone https://github.com/yourusername/moltrainer.git
+git clone https://github.com/Marissapy/MolTrainer.git
 cd moltrainer
 pip install -e .
 ```
@@ -1121,7 +1121,7 @@ If you use MolTrainer in your research, please cite:
   title = {MolTrainer: Machine Learning Tool for Molecular Data},
   author = {MolTrainer Development Team},
   year = {2025},
-  url = {https://github.com/yourusername/moltrainer}
+  url = {https://github.com/Marissapy/MolTrainer}
 }
 ```
 
@@ -1130,8 +1130,8 @@ If you use MolTrainer in your research, please cite:
 ## Support
 
 - **Documentation**: This file and `help_Chinese.md`
-- **Issues**: https://github.com/yourusername/moltrainer/issues
-- **Discussions**: https://github.com/yourusername/moltrainer/discussions
+- **Issues**: https://github.com/Marissapy/MolTrainer/issues
+- **Discussions**: https://github.com/Marissapy/MolTrainer/discussions
 
 ---
 

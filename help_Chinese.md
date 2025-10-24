@@ -67,7 +67,7 @@ pip install rdkit-pypi
 **可编辑安装（推荐用于开发）：**
 
 ```bash
-git clone https://github.com/yourusername/moltrainer.git
+git clone https://github.com/Marissapy/MolTrainer.git
 cd moltrainer
 pip install -e .
 ```
@@ -1121,7 +1121,7 @@ pip install xgboost lightgbm
   title = {MolTrainer: 分子数据的机器学习工具},
   author = {MolTrainer开发团队},
   year = {2025},
-  url = {https://github.com/yourusername/moltrainer}
+  url = {https://github.com/Marissapy/MolTrainer}
 }
 ```
 
@@ -1130,8 +1130,8 @@ pip install xgboost lightgbm
 ## 支持
 
 - **文档**：本文件和 `help.md`
-- **问题反馈**：https://github.com/yourusername/moltrainer/issues
-- **讨论**：https://github.com/yourusername/moltrainer/discussions
+- **问题反馈**：https://github.com/Marissapy/MolTrainer/issues
+- **讨论**：https://github.com/Marissapy/MolTrainer/discussions
 
 ---
 
