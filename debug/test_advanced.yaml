@@ -1,0 +1,23 @@
+# Advanced Test: Hyperparameter Search with XGBoost
+input_file: debug/test_data.csv
+output_folder: debug/results_advanced_search
+target_column: activity
+smiles_column: smiles
+
+model_type: xgb
+task: classification
+auto_split_mode: 3way
+train_split_ratio: 0.6
+
+# Hyperparameter Search
+search_method: random
+search_iterations: 5
+search_cv_folds: 3
+
+# Base hyperparameters (will be searched)
+n_estimators: 50
+cv_folds: 3
+
+random_state: 42
+verbose: true
+

@@ -1,0 +1,52 @@
+================================================================================
+MOLTRAINER TRAINING LOG
+================================================================================
+Timestamp: 2025-10-24 14:12:12
+Training Data: debug/test_data.csv
+Model Type: RF
+Task: Classification
+Target Column: activity
+
+AUTO DATA SPLITTING:
+  Original samples: 50
+  Train: 34 (70.0%)
+  Validation: 8 (15.0%)
+  Test: 8 (15.0%)
+  Stratified: Yes
+  Random seed: 42
+
+HYPERPARAMETERS:
+  n_estimators: 100
+  max_depth: None (unlimited)
+  random_state: 42
+
+FEATURE INFORMATION:
+  Number of features: 10
+  Feature names: MolWt, LogP, NumHDonors, NumHAcceptors, TPSA, NumRotatableBonds, NumAromaticRings, NumSaturatedRings, NumAliphaticRings, RingCount
+
+TRAINING METRICS:
+  Training time: 0.2240 seconds
+
+PERFORMANCE METRICS:
+
+  Train Set:
+    Accuracy:  0.9706
+    Precision: 0.9721
+    Recall:    0.9706
+    F1 Score:  0.9705
+
+  Val Set:
+    Accuracy:  0.8750
+    Precision: 0.9000
+    Recall:    0.8750
+    F1 Score:  0.8730
+
+  Test Set:
+    Accuracy:  1.0000
+    Precision: 1.0000
+    Recall:    1.0000
+    F1 Score:  1.0000
+
+================================================================================
+END OF TRAINING LOG
+================================================================================

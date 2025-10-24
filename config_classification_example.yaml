@@ -1,0 +1,45 @@
+# Classification Task Configuration Example
+# For binary/multi-class classification problems
+
+input_file: data/train.csv
+output_folder: results/classification_exp
+target_column: activity
+
+# SMILES-based featurization
+smiles_column: smiles
+
+# Optional: pre-split validation/test sets
+# validation_file: data/val.csv
+# test_file: data/test.csv
+
+# Model Selection
+# Options: 'rf', 'svm', 'xgb', 'lgb', 'lr', 'all'
+# Use 'all' to compare all models
+model_type: all
+
+# Task type (auto-detected by default)
+task: classification
+
+# Data Splitting (if no val/test files provided)
+# '3way': train/val/test (70/15/15)
+# '2way': train/test (80/20)
+# 'none': no auto-split
+auto_split_mode: 3way
+# train_split_ratio: 0.7
+
+# Hyperparameter Search
+# 'grid': exhaustive grid search
+# 'random': random search (faster)
+# 'none': use default parameters
+search_method: random
+search_iterations: 20        # for random search
+search_cv_folds: 3           # CV folds during search
+search_timeout: 600          # max seconds (10 min), null for no limit
+
+# Cross-validation for final model
+cv_folds: 5
+
+# Other options
+random_state: 42
+verbose: true
+

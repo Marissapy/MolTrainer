@@ -1,0 +1,30 @@
+# MolTrainer Training Configuration
+# This is an example configuration file for training models
+
+# Input Files
+input_file: test_cleaned_train.csv
+output_folder: config_training_results
+target_column: activity
+
+# Feature Specification (use either smiles_column OR feature_columns)
+smiles_column: smiles
+
+# Optional: Additional Data
+validation_file: test_cleaned_val.csv
+test_file: test_cleaned_test.csv
+
+# Model Settings
+model_type: rf
+task: classification
+
+# Hyperparameters
+n_estimators: 50
+max_depth: null
+random_state: 42
+
+# Cross-Validation
+cv_folds: 3
+no_cv: false
+
+# Output
+verbose: true

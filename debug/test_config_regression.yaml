@@ -1,0 +1,20 @@
+# Debug Test: Regression with numeric features
+input_file: debug/test_data.csv
+output_folder: debug/results_regression
+target_column: ic50
+
+feature_columns:
+  - logp
+  - molecular_weight
+
+model_type: rf
+task: regression
+auto_split_mode: 3way
+
+search_method: none
+n_estimators: 50
+cv_folds: 3
+
+random_state: 42
+verbose: true
+

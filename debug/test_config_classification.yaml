@@ -1,0 +1,18 @@
+# Debug Test: Classification with 2-way split
+input_file: debug/test_data.csv
+output_folder: debug/results_classification
+target_column: activity
+smiles_column: smiles
+
+model_type: rf
+task: classification
+auto_split_mode: 2way
+train_split_ratio: 0.8
+
+search_method: none
+n_estimators: 50
+cv_folds: 3
+
+random_state: 42
+verbose: true
+

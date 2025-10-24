@@ -1,0 +1,38 @@
+# MolTrainer Advanced Training Configuration
+# Multi-model support with hyperparameter search
+
+# Input Files
+input_file: test_cleaned.csv
+output_folder: advanced_training_results
+target_column: activity
+
+# Feature Specification
+smiles_column: smiles
+
+# Model Selection (rf, svm, xgb, lgb, lr)
+model_type: rf
+task: classification
+
+# Data Splitting
+# Options: '3way' (train/val/test), '2way' (train/test), 'none' (no split)
+auto_split_mode: 2way
+train_split_ratio: 0.8  # For 2way: 80/20 split
+
+# Hyperparameter Search
+# Options: 'grid', 'random', 'none'
+search_method: random
+search_iterations: 10
+search_cv_folds: 3
+
+# Manual Hyperparameters (used when search_method='none')
+n_estimators: 100
+max_depth: null
+
+# Cross-Validation
+cv_folds: 5
+no_cv: false
+
+# Output
+verbose: true
+random_state: 42
+

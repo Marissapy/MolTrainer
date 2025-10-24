@@ -1,0 +1,50 @@
+# Regression Task Configuration Example
+# For continuous value prediction
+
+input_file: data/train.csv
+output_folder: results/regression_exp
+target_column: ic50
+
+# Option 1: SMILES-based features
+smiles_column: smiles
+
+# Option 2: Use numeric features directly
+# Uncomment to use instead of SMILES
+# feature_columns:
+#   - logp
+#   - molecular_weight
+#   - tpsa
+#   - num_rotatable_bonds
+
+# Optional: pre-split datasets
+# validation_file: data/val.csv
+# test_file: data/test.csv
+
+# Model Selection
+# Options: 'rf', 'svm', 'xgb', 'lgb', 'lr', 'all'
+model_type: rf
+
+# Task type
+task: regression
+
+# Data Splitting (traditional 8:2 for regression)
+auto_split_mode: 2way
+train_split_ratio: 0.8
+
+# Hyperparameter Search
+search_method: random
+search_iterations: 30
+search_cv_folds: 5
+search_timeout: 1800         # 30 minutes
+
+# Manual hyperparameters (used when search_method='none')
+n_estimators: 200
+max_depth: 15
+
+# Cross-validation
+cv_folds: 5
+
+# Other options
+random_state: 42
+verbose: true
+
